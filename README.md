@@ -106,53 +106,6 @@ const supabase = await createClient();
 
 **Fix:** Rewrote `utils/supabase/middleware.ts` to use the official `getAll`/`setAll` pattern:
 ```ts
----
-
-## 📁 Project Structure
-
-```
-booknest/
-├── app/
-│   ├── (auth)/
-│   │   ├── auth/confirm/       # Email verification callback
-│   │   ├── login/              # Login page
-│   │   ├── logout/             # Logout handler
-│   │   └── register/           # Registration page
-│   ├── auth/
-│   │   └── callback/           # OAuth callback (Google sign-in)
-│   ├── dashboard/              # Main dashboard (protected)
-│   ├── error/                  # Error page
-│   ├── globals.css             # Theme, animations, utility classes
-│   ├── layout.tsx              # Root layout
-│   ├── loading.tsx             # Global loading state
-│   └── page.tsx                # Root redirect (→ login or dashboard)
-├── components/
-│   ├── AuthButton.tsx          # Google OAuth button with SVG icon
-│   ├── BookmarkCard.tsx        # Individual bookmark card
-│   ├── BookmarkForm.tsx        # Add bookmark form
-│   ├── BookmarkList.tsx        # Bookmark grid with search & sort
-│   ├── EmptyState.tsx          # No bookmarks illustration
-│   ├── Navbar.tsx              # Sticky navigation bar
-│   ├── SearchBar.tsx           # Search input component
-│   ├── SkeletonCard.tsx        # Loading placeholder card
-│   ├── SortSelect.tsx          # Sort dropdown component
-│   ├── ThemeToggle.tsx         # Dark/light mode toggle
-│   └── Toast.tsx               # Toast notification system
-├── lib/
-│   ├── auth-actions.ts         # Server actions (login, signup, logout, Google)
-│   ├── realtime.ts             # Realtime utilities
-│   └── utils.ts                # General utilities
-├── types/
-│   └── bookmark.ts             # Bookmark TypeScript interface
-├── utils/
-│   └── supabase/
-│       ├── client.ts           # Browser Supabase client
-│       ├── middleware.ts       # Session refresh middleware
-│       └── server.ts           # Server Supabase client
-├── middleware.ts               # Next.js middleware (auth guard)
-├── supabase-setup.sql          # Database schema & RLS policies
-└── package.json
-```
 
 ---
 
