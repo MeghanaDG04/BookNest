@@ -209,7 +209,7 @@ Both tables have **Row Level Security** enabled — users can only access their 
 ### Vercel (Recommended)
 
 1. Push your code to GitHub
-2. Import the repo at [vercel.com/new](https://book-nest-three.vercel.app/)
+2. Import the repo at [https://book-nest-three.vercel.app/](https://book-nest-three.vercel.app/)
 3. Add your environment variables in Vercel's dashboard
 4. Update `NEXT_PUBLIC_SITE_URL` to your production domain
 5. Update Google OAuth redirect URI to include your production Supabase callback URL
