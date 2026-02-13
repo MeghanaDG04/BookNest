@@ -104,6 +104,10 @@ export async function signout() {
 
 export async function signInWithGoogle() {
   const supabase = await createClient();
+
+  const headerStore = await headers();
+  const origin = headerStore.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
@@ -111,7 +115,7 @@ export async function signInWithGoogle() {
         access_type: "offline",
         prompt: "consent",
       },
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000"}/auth/confirm`,
+      redirectTo: `${origin}/auth/callback`,
     },
   });
 
