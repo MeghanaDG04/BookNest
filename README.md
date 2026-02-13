@@ -60,8 +60,52 @@ BookNest is a modern, full-stack bookmark manager built with **Next.js 16**, **S
 | Icons        | Lucide React                        |
 | Backend      | Supabase (Auth, Database, Realtime) |
 | Auth         | Supabase SSR (@supabase/ssr)        |
-| Deployment   | Vercel (recommended)                |
+| Deployment   | Vercel                              |
 
+---
+
+## 🧩 Challenges Faced & How I Solved Them
+
+### 1. Supabase Authentication — Learning from Scratch
+
+The hardest part of this project was setting up authentication using Supabase since it was completely new to me. At first, it felt confusing — understanding the difference between the server client and browser client, how cookies work with SSR, and how to properly manage sessions in Next.js App Router. I didn't give up. I watched YouTube videos, asked questions on ChatGPT, and learned whatever was needed for this. With some trial and error, I was able to understand it and get authentication working for BookNest.
+
+### 2. `createClient()` Not Being Awaited
+
+**Problem:** After wiring up login and register, every auth action crashed with:
+```
+TypeError: Cannot read properties of undefined (reading 'signInWithPassword')
+```
+
+**Root cause:** The Supabase server client (`createClient()` in `utils/supabase/server.ts`) is an `async` function because it needs to `await cookies()`. But in `auth-actions.ts`, I was calling it without `await`:
+```ts
+// ❌ Bug — supabase is a Promise, not the client
+const supabase = createClient();
+await supabase.auth.signInWithPassword(data); // crashes
+```
+
+**Fix:** Added `await` to every `createClient()` call:
+```ts
+// ✅ Fix
+const supabase = await createClient();
+```
+
+### 3. Login Redirecting Back to Login (Route Group Confusion)
+
+**Problem:** After successful email login, the app redirected right back to the login page instead of the dashboard. An infinite loop.
+
+**Root cause:** The dashboard page lived at `app/(dashboard)/page.tsx`. In Next.js, parenthesized folders like `(dashboard)` are **route groups** — they don't create a URL segment. So `app/(dashboard)/page.tsx` served the `/` route, NOT `/dashboard`. But `app/page.tsx` was redirecting to `/dashboard` after login, which didn't exist as a route. The middleware saw no matching page, treated it as unauthenticated, and sent the user back to `/login`.
+
+**Fix:** Moved the dashboard from `app/(dashboard)/page.tsx` to `app/dashboard/page.tsx` (without parentheses) so `/dashboard` becomes a real route.
+
+### 4. Middleware Not Preserving Session Cookies
+
+**Problem:** Even after fixing the route, login still looped back. The session cookie wasn't surviving the redirect.
+
+**Root cause:** The Supabase middleware was using the **old deprecated** cookie API (`get`, `set`, `remove`) instead of the current `getAll`/`setAll` API. The old API didn't properly forward auth cookies in the response, so every new request appeared unauthenticated.
+
+**Fix:** Rewrote `utils/supabase/middleware.ts` to use the official `getAll`/`setAll` pattern:
+```ts
 ---
 
 ## 📁 Project Structure
@@ -70,10 +114,12 @@ BookNest is a modern, full-stack bookmark manager built with **Next.js 16**, **S
 booknest/
 ├── app/
 │   ├── (auth)/
-│   │   ├── auth/confirm/       # OAuth & email verification callback
+│   │   ├── auth/confirm/       # Email verification callback
 │   │   ├── login/              # Login page
 │   │   ├── logout/             # Logout handler
 │   │   └── register/           # Registration page
+│   ├── auth/
+│   │   └── callback/           # OAuth callback (Google sign-in)
 │   ├── dashboard/              # Main dashboard (protected)
 │   ├── error/                  # Error page
 │   ├── globals.css             # Theme, animations, utility classes
@@ -155,6 +201,10 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 2. Create an OAuth 2.0 Client ID
 3. Add `https://your-project-id.supabase.co/auth/v1/callback` as an authorized redirect URI
 4. In **Supabase Dashboard → Authentication → Providers**, enable Google and paste your Client ID and Secret
+5. In **Supabase Dashboard → Authentication → URL Configuration**, add your redirect URLs:
+   ```
+   http://localhost:3000/auth/callback
+   ```
 
 ### 6. Run the Development Server
 
@@ -195,21 +245,23 @@ Both tables have **Row Level Security** enabled — users can only access their 
 
 ---
 
-## 🧞 Available Scripts
-
-| Command         | Description                    |
-| --------------- | ------------------------------ |
-| `npm run dev`   | Start development server       |
-
-
----
-
 ## 🌐 Deployment
 
 ### Vercel (Recommended)
 
 1. Push your code to GitHub
-2. Import the repo at [https://book-nest-three.vercel.app/](https://book-nest-three.vercel.app/)
-3. Add your environment variables in Vercel's dashboard
-4. Update `NEXT_PUBLIC_SITE_URL` to your production domain
-5. Update Google OAuth redirect URI to include your production Supabase callback URL
+2. Import the repo at [vercel.com/new](https://vercel.com/new)
+3. Add environment variables in Vercel's dashboard:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=https://your-project-id.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+   ```
+4. In **Supabase Dashboard → Authentication → URL Configuration**, add:
+   ```
+   https://your-app.vercel.app/auth/callback
+   ```
+5. Update Google OAuth redirect URI if using Google sign-in
+
+**Live Demo:** [https://book-nest-three.vercel.app](https://book-nest-three.vercel.app)
+
+---
