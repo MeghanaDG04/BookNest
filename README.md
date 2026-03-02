@@ -64,51 +64,6 @@ BookNest is a modern, full-stack bookmark manager built with **Next.js 16**, **S
 
 ---
 
-## 🧩 Challenges Faced & How I Solved Them
-
-### 1. Supabase Authentication — Learning from Scratch
-
-The hardest part of this project was setting up authentication using Supabase since it was completely new to me. At first, it felt confusing — understanding the difference between the server client and browser client, how cookies work with SSR, and how to properly manage sessions in Next.js App Router. I didn't give up. I watched YouTube videos, asked questions on ChatGPT, and learned whatever was needed for this. With some trial and error, I was able to understand it and get authentication working for BookNest.
-
-### 2. `createClient()` Not Being Awaited
-
-**Problem:** After wiring up login and register, every auth action crashed with:
-```
-TypeError: Cannot read properties of undefined (reading 'signInWithPassword')
-```
-
-**Root cause:** The Supabase server client (`createClient()` in `utils/supabase/server.ts`) is an `async` function because it needs to `await cookies()`. But in `auth-actions.ts`, I was calling it without `await`:
-```ts
-// ❌ Bug — supabase is a Promise, not the client
-const supabase = createClient();
-await supabase.auth.signInWithPassword(data); // crashes
-```
-
-**Fix:** Added `await` to every `createClient()` call:
-```ts
-// ✅ Fix
-const supabase = await createClient();
-```
-
-### 3. Login Redirecting Back to Login (Route Group Confusion)
-
-**Problem:** After successful email login, the app redirected right back to the login page instead of the dashboard. An infinite loop.
-
-**Root cause:** The dashboard page lived at `app/(dashboard)/page.tsx`. In Next.js, parenthesized folders like `(dashboard)` are **route groups** — they don't create a URL segment. So `app/(dashboard)/page.tsx` served the `/` route, NOT `/dashboard`. But `app/page.tsx` was redirecting to `/dashboard` after login, which didn't exist as a route. The middleware saw no matching page, treated it as unauthenticated, and sent the user back to `/login`.
-
-**Fix:** Moved the dashboard from `app/(dashboard)/page.tsx` to `app/dashboard/page.tsx` (without parentheses) so `/dashboard` becomes a real route.
-
-### 4. Middleware Not Preserving Session Cookies
-
-**Problem:** Even after fixing the route, login still looped back. The session cookie wasn't surviving the redirect.
-
-**Root cause:** The Supabase middleware was using the **old deprecated** cookie API (`get`, `set`, `remove`) instead of the current `getAll`/`setAll` API. The old API didn't properly forward auth cookies in the response, so every new request appeared unauthenticated.
-
-**Fix:** Rewrote `utils/supabase/middleware.ts` to use the official `getAll`/`setAll` pattern:
-```ts
-
----
-
 ## 🚀 Getting Started
 
 ### Prerequisites
